@@ -100,14 +100,13 @@ html.night-mode{ --page-bg-color:var(--page-bg-night); }
 }
 .hud-logo{
   display:flex;
-  justify-content:center;
+  justify-content:flex-start;
   align-items:center;
   width:100%;
   pointer-events:none;
 }
 .hud-logo img{
-  max-width:min(360px, 68vw);
-  width:100%;
+  width:min(180px, 34vw);
   height:auto;
   display:block;
 }
