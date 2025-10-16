@@ -75,6 +75,9 @@ let running = false, paused = false;
 let lastTime = 0, startTime = 0, elapsedMs = 0;
 let diff = 'normal';
 let currentDiff = 'normal';
+if (typeof window !== 'undefined'){
+  window.currentDiff = currentDiff;
+}
 let candyBoostUntil = 0, webBoostUntil = 0, webStormUntil = 0;
 let fogUntil = 0, fogStartAt = 0, fogLevel = 0;
 let heartSpawned = false, heartCollected = false;
@@ -82,6 +85,21 @@ const HEART_SPAWN_DELAY = 15000;
 const HEART_MIN_PUMPKINS = 10;
 const HEART_SPIN_RANGE = [0.002, 0.0045];
 let lastWinStats = null;
+
+function syncCurrentDiff(value){
+  const normalized = (typeof normalizeDifficulty === 'function') ? normalizeDifficulty(value) : (value || 'normal');
+  currentDiff = normalized || 'normal';
+  if (typeof window !== 'undefined'){
+    window.currentDiff = currentDiff;
+  }
+  return currentDiff;
+}
+
+function normalizeDifficulty(value){
+  const raw = (value == null) ? '' : String(value);
+  const key = raw.trim().toLowerCase();
+  return DIFF[key] ? key : 'normal';
+}
 
 const WEB_STORM_DURATION = 30000;
 
@@ -950,8 +968,9 @@ function openMainMenu(){
 }
 
 function startGame(difficulty){
-  diff = difficulty||'normal';
-  currentDiff = diff;
+  const mode = normalizeDifficulty(difficulty);
+  diff = mode;
+  syncCurrentDiff(diff);
   pumpkins=0; lives=BASE_LIVES; objects.length=0; lastSpawn=0;
   effects.length=0;
   candyBoostUntil=0; webBoostUntil=0; webStormUntil=0;
@@ -1025,10 +1044,11 @@ function loadStats(){
 }
 function saveStats(s){ try{ localStorage.setItem('pumpkin_stats', JSON.stringify(s)); }catch(e){} }
 function recordAttempt(diff, seconds){
+  const key = normalizeDifficulty(diff);
   const s = loadStats();
-  s.attempts[diff] = (s.attempts[diff]||0)+1;
-  s.sumTime[diff] = (s.sumTime[diff]||0)+seconds;
-  if(!s.best[diff] || seconds < s.best[diff]) s.best[diff] = seconds;
+  s.attempts[key] = (s.attempts[key]||0)+1;
+  s.sumTime[key] = (s.sumTime[key]||0)+seconds;
+  if(!s.best[key] || seconds < s.best[key]) s.best[key] = seconds;
   saveStats(s); return s;
 }
 function renderRecords(){
@@ -1079,6 +1099,7 @@ let shareOverlay = null;
 let sharePreviewText = null;
 let shareLinkEl = null;
 let sharePreviewImage = null;
+let sharePreviewAnchor = null;
 let btnCopyShare = null;
 let btnCloseShare = null;
 let highlightedShareTarget = null;
@@ -1088,6 +1109,7 @@ function ensureShareElements(wire=false){
   sharePreviewText = document.getElementById('sharePreviewText');
   shareLinkEl = document.getElementById('shareLink');
   sharePreviewImage = document.getElementById('sharePreviewImage');
+  sharePreviewAnchor = document.getElementById('sharePreviewAnchor');
   btnCopyShare = document.getElementById('btnCopyShare');
   btnCloseShare = document.getElementById('btnCloseShare');
   if(!wire) return;
@@ -1222,6 +1244,12 @@ function showShareOverlay(payload){
   if(shareLinkEl){
     shareLinkEl.textContent = data.link;
     shareLinkEl.href = data.link;
+  }
+  if(sharePreviewAnchor){
+    const href = data.link || shareBaseLink();
+    sharePreviewAnchor.href = href;
+    sharePreviewAnchor.target = '_blank';
+    sharePreviewAnchor.rel = 'noopener noreferrer';
   }
   if(sharePreviewImage){
     const url = data.imageUrl || getShareImageUrl();
@@ -1434,7 +1462,8 @@ function pushLeaderboard(nick, diff, seconds){
   const lb = loadLeaderboard();
   const cleanNick = (nick || '').trim();
   const finalNick = cleanNick || resolveNick();
-  lb.push({ nick: finalNick, diff, seconds, ts: Date.now() });
+  const key = normalizeDifficulty(diff);
+  lb.push({ nick: finalNick, diff: key, seconds, ts: Date.now() });
   lb.sort((a,b)=> a.seconds - b.seconds);
   saveLeaderboard(lb);
   return lb;
