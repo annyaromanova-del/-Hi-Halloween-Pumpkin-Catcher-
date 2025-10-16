@@ -44,11 +44,11 @@ let NIGHT_MODE=false; try{ const h=new Date().getHours(); NIGHT_MODE=(h>=18||h<6
 
 const SIZE_REDUCTION = 0.8;
 const BASE_SIZE = {
-  pumpkin: 44 * 1.07 * 1.2 * SIZE_REDUCTION,
+  pumpkin: 44 * 1.07 * 1.2 * SIZE_REDUCTION * 0.85,
   spider: 44,
   candy: 44,
   web: 44 * 1.07,
-  ghost: 66 * 1.07 * 1.2 * SIZE_REDUCTION,
+  ghost: 66 * 1.07 * 1.2 * SIZE_REDUCTION * 0.85,
   heart: 46
 };
 const FEATURE_SCALE = 1.5;
