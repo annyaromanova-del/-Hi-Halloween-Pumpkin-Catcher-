@@ -85,8 +85,39 @@ html.night-mode{ --page-bg-color:var(--page-bg-night); }
   z-index:2;
   touch-action:none;
 }
-.hud{position:fixed;top:10px;left:50%;transform:translateX(-50%);
-  width:min(100vw - 16px,1400px);display:flex;justify-content:space-between;align-items:center;z-index:10}
+.hud-container{
+  position:fixed;
+  top:10px;
+  left:50%;
+  transform:translateX(-50%);
+  width:min(100vw - 16px,1400px);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  z-index:10;
+  pointer-events:none;
+}
+.hud-logo{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  pointer-events:none;
+}
+.hud-logo img{
+  max-width:min(360px, 68vw);
+  width:100%;
+  height:auto;
+  display:block;
+}
+.hud{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  pointer-events:auto;
+}
 .left{display:flex;gap:8px;flex-wrap:wrap}
 .right{display:flex;gap:8px;align-items:center}
 .pill{background:var(--card);border:1px solid var(--edge);padding:6px 12px;border-radius:12px;font-weight:700}
@@ -139,7 +170,7 @@ html.night-mode{ --page-bg-color:var(--page-bg-night); }
 #preloader.hidden{display:none!important}
 @media (max-width:1024px){
   .stage{width:100vw;margin:24px 0 56px;border-radius:0;box-shadow:none;min-height:min(720px, calc(100vh - 120px))}
-  .hud,.controls{width:100vw}
+  .hud-container,.controls{width:100vw}
   .stage-branding{margin-top:2px}
   .stage-branding__tagline{font-size:0.82rem;letter-spacing:0.07em}
 }
