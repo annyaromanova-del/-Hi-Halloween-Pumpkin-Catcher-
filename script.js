@@ -220,14 +220,47 @@ function escapeHtml(str){
 }
 
 const baseFall = { pumpkin:2.2, spider:2.6, candy:2.0, ghost:2.0, web:2.2, heart:2.4 };
+const TYPE_SYMBOL = { pumpkin:'P', spider:'S', candy:'C', ghost:'G', web:'W', heart:'H' };
+const BAG_SCALE = 10;
+function weightsToBag(weights){
+  const bag = [];
+  if(!weights) return bag;
+  for(const [type, rawWeight] of Object.entries(weights)){
+    const weight = Math.max(0, Number(rawWeight) || 0);
+    if(weight <= 0) continue;
+    const symbol = TYPE_SYMBOL[type] || type;
+    const count = Math.max(1, Math.round(weight * BAG_SCALE));
+    for(let i=0;i<count;i++) bag.push(symbol);
+  }
+  return bag;
+}
 const DIFF = {
-  easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.9, bag: [ 'P','P','P','P','P', 'S','S', 'C', 'G','G', 'W' ] },
-  normal: { spawnBase: 720, spawnMin: 360, fallMul: 1.0, bag: [ 'P','P','P','P',    'S','S', 'C', 'G','G', 'W' ] },
-  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.2, bag: [ 'P','P','P',        'S','S','S', 'C', 'G', 'W','W' ] },
-  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.35,bag: [ 'P','P','P',        'S','S','S', 'C', 'G', ' W','W' ] }
+  easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.85, weights: { pumpkin:4,   spider:1.6, candy:1, ghost:2,   web:0.8 } },
+  normal: { spawnBase: 720, spawnMin: 360, fallMul: 1.0,  weights: { pumpkin:4,   spider:2.0, candy:1, ghost:2,   web:1.0 } },
+  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.15, weights: { pumpkin:4,   spider:2.4, candy:1, ghost:2,   web:1.2 } },
+  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.15, weights: { pumpkin:3.4, spider:2.4, candy:1, ghost:2,   web:1.2 } }
 };
+for (const profile of Object.values(DIFF)){
+  if(profile.weights){
+    const bag = weightsToBag(profile.weights);
+    if(bag.length) profile.bag = bag;
+  }
+  if(!profile.bag || !profile.bag.length){
+    profile.bag = weightsToBag({ pumpkin:1, spider:1, web:1 });
+  }
+  profile.bagTypes = bagToTypes(profile.bag);
+}
 const WEB_STORM_BAG = ['spider','web','spider','web','spider','web','spider','web'];
-function bagToTypes(bag){ return bag.map(c => c==='P'?'pumpkin': c==='S'?'spider': c==='C'?'candy': c==='G'?'ghost':'web'); }
+function bagToTypes(bag){
+  return bag.map(c =>
+    c==='P' ? 'pumpkin' :
+    c==='S' ? 'spider' :
+    c==='C' ? 'candy' :
+    c==='G' ? 'ghost' :
+    c==='H' ? 'heart' :
+    'web'
+  );
+}
 
 function drawPumpkinVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#e56c05'; ctx.beginPath(); ctx.arc(13,13,12,0,Math.PI*2); ctx.fill(); ctx.restore(); }
 function drawSpiderVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(13,13,12,0,Math.PI*2); ctx.fill(); ctx.restore(); }
@@ -534,7 +567,7 @@ function spawn(now){
   const profile=DIFF[diff];
   const inStorm = now < webStormUntil;
   if(!inStorm && spawnHeart(now, profile)) return;
-  const bag = inStorm ? WEB_STORM_BAG : bagToTypes(profile.bag);
+  const bag = inStorm ? WEB_STORM_BAG : (profile.bagTypes || (profile.bagTypes = bagToTypes(profile.bag)));
   const type = bag[(Math.random()*bag.length)|0] || 'spider';
   const size = boostedSize(BASE_SIZE[type] || 44, 28);
   let vy=(baseFall[type]+(Math.random()*1.0-0.4))*profile.fallMul;
