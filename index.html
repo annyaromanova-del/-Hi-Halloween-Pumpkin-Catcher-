@@ -24,17 +24,22 @@
   <link rel="stylesheet" href="rwizard-patch.css" />
 </head>
 <body class=\"modal-open\" id="game-root">
-  <div class="hud">
-    <div class="left">
-      <div class="pill" id="score">🎃 0 / 100</div>
-      <div class="pill" id="timer">⏱ 0.0s</div>
-      <div class="pill" id="lives">❤️❤️❤️</div>
-      <span class="badge hidden" id="slowBadge" aria-label="Режим «Тыквопад» активен" title="Режим «Тыквопад» активен">🍬 Тыквопад</span>
-      <span class="badge hidden" id="fastBadge">🕸 Шторм</span>
-      <span class="badge hidden" id="pausedBadge">⏸ Пауза</span>
+  <div class="hud-container">
+    <div class="hud-logo" aria-hidden="true">
+      <img src="лого-1.png" alt="Hi, Halloween!" loading="lazy" />
     </div>
-    <div class="right">
-      <button class="btn" id="btnVol" title="Mute/Unmute">🔊</button>
+    <div class="hud">
+      <div class="left">
+        <div class="pill" id="score">🎃 0 / 100</div>
+        <div class="pill" id="timer">⏱ 0.0s</div>
+        <div class="pill" id="lives">❤️❤️❤️</div>
+        <span class="badge hidden" id="slowBadge" aria-label="Режим «Тыквопад» активен" title="Режим «Тыквопад» активен">🍬 Тыквопад</span>
+        <span class="badge hidden" id="fastBadge">🕸 Шторм</span>
+        <span class="badge hidden" id="pausedBadge">⏸ Пауза</span>
+      </div>
+      <div class="right">
+        <button class="btn" id="btnVol" title="Mute/Unmute">🔊</button>
+      </div>
     </div>
   </div>
 

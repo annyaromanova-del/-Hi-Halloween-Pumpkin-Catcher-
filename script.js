@@ -801,25 +801,6 @@ function drawPlayer(){
     ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 18;
     ctx.drawImage(SPRITES.basket, x, imgY, imgW, imgH);
     ctx.restore();
-    if (SPRITES.basketLogo && SPRITES.basketLogo.naturalWidth){
-      const logo = SPRITES.basketLogo;
-      const aspect = (logo.naturalWidth && logo.naturalHeight)
-        ? (logo.naturalHeight / logo.naturalWidth)
-        : 1;
-      const targetHeight = imgH * 0.55;
-      const logoHeight = Math.min(targetHeight, imgH * 0.62);
-      const logoWidth = logoHeight / (aspect || 1);
-      const sidePadding = w * 0.08;
-      const centerY = imgY + imgH * 0.55;
-      const rawY = centerY - logoHeight / 2;
-      const minY = imgY + imgH * 0.18;
-      const maxY = imgY + imgH - logoHeight - imgH * 0.05;
-      const logoY = Math.max(minY, Math.min(maxY, rawY));
-      const logoX = x + w - sidePadding - logoWidth;
-      ctx.save();
-      ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
-      ctx.restore();
-    }
     return;
   }
 
