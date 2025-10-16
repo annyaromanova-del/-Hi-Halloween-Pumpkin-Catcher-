@@ -7,16 +7,19 @@
   --stage-bg-url: url("assets/day/bg_video.png?v=v12");
   --page-bg-night:#0b1330;
   --page-bg-day:#4d7ac2;
+  --page-bg-color:var(--page-bg-night);
 }
 *{box-sizing:border-box}
 html,body{
   margin:0;height:100%;
-  background:var(--page-bg-night);color:var(--txt);
+  background:var(--page-bg-color);color:var(--txt);
   font:16px/1.45 system-ui,Segoe UI,Roboto,Arial;
   overscroll-behavior:none;
 }
-body.day-mode{ background:var(--page-bg-day); }
-body.night-mode{ background:var(--page-bg-night); }
+body.day-mode,
+html.day-mode{ --page-bg-color:var(--page-bg-day); }
+body.night-mode,
+html.night-mode{ --page-bg-color:var(--page-bg-night); }
 #stageWrap{ touch-action:none; }
 .stage{
   position:relative;
