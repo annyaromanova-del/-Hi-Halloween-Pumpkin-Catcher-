@@ -881,8 +881,7 @@ function showVictory(now){
   const elapsed = Math.max(0,(now-startTime)/1000);
   const mode = currentDiff||diff||'normal';
   const modeLabel = DIFF_LABELS[mode] || mode;
-  const rawNick = loadNick();
-  const displayName = (rawNick || '').trim() || 'Игрок';
+  const displayName = resolveNick();
   msgTitle.textContent='🎉 Победа!';
   const safeNick = escapeHtml(displayName);
   const safeDiff = escapeHtml(modeLabel);
@@ -921,9 +920,9 @@ function lose(){
   running=false;
   paused=false;
   resetVictoryPanel();
-  const nick = loadNick() || 'Игрок';
+  const nick = resolveNick();
   msgTitle.textContent='Игра окончена';
-  msgText.innerHTML = `Жизни закончились, <strong>${escapeHtml((nick||'').trim()||'Игрок')}</strong>. Попробуйте еще раз.`;
+  msgText.innerHTML = `Жизни закончились, <strong>${escapeHtml(nick)}</strong>. Попробуйте еще раз.`;
   winActions?.classList.add('hidden');
   lossActions?.classList.remove('hidden');
   messageOverlay.classList.remove('victory');
@@ -1079,6 +1078,7 @@ try{
 let shareOverlay = null;
 let sharePreviewText = null;
 let shareLinkEl = null;
+let sharePreviewImage = null;
 let btnCopyShare = null;
 let btnCloseShare = null;
 let highlightedShareTarget = null;
@@ -1087,6 +1087,7 @@ function ensureShareElements(wire=false){
   shareOverlay = document.getElementById('shareOverlay');
   sharePreviewText = document.getElementById('sharePreviewText');
   shareLinkEl = document.getElementById('shareLink');
+  sharePreviewImage = document.getElementById('sharePreviewImage');
   btnCopyShare = document.getElementById('btnCopyShare');
   btnCloseShare = document.getElementById('btnCloseShare');
   if(!wire) return;
@@ -1148,29 +1149,67 @@ function shareBaseLink(){
   }
 }
 
+const SHARE_IMAGE_PATH = 'banner.png';
+let shareImageUrlCache = '';
+let shareImageFilePromise = null;
+
+function getShareImageUrl(){
+  if(shareImageUrlCache) return shareImageUrlCache;
+  try{
+    shareImageUrlCache = new URL(SHARE_IMAGE_PATH, window.location.href).toString();
+  }catch(e){
+    shareImageUrlCache = SHARE_IMAGE_PATH;
+  }
+  return shareImageUrlCache;
+}
+
+async function loadShareImageFile(){
+  if(shareImageFilePromise) return shareImageFilePromise;
+  if(typeof fetch !== 'function' || typeof File !== 'function'){
+    shareImageFilePromise = Promise.resolve(null);
+    return shareImageFilePromise;
+  }
+  shareImageFilePromise = fetch(SHARE_IMAGE_PATH)
+    .then(res=>{ if(!res.ok) throw new Error('image load failed'); return res.blob(); })
+    .then(blob=>{
+      const type = blob.type || 'image/png';
+      return new File([blob], 'banner.png', { type });
+    })
+    .catch(()=>null);
+  return shareImageFilePromise;
+}
+
+async function buildShareFiles(){
+  const file = await loadShareImageFile();
+  return file ? [file] : [];
+}
+
 function buildSharePayload(){
+  const fallbackNick = resolveNick();
   const stats = lastWinStats || {
     seconds: Math.max(0, elapsedMs/1000),
     mode: currentDiff||diff||'normal',
     modeLabel: DIFF_LABELS[currentDiff||diff||'normal'] || (currentDiff||diff||'normal'),
-    nick: loadNick() || 'Игрок'
+    nick: fallbackNick
   };
-  const nick = stats.nick || loadNick() || 'Игрок';
-  const displayName = (nick || '').trim() || 'Игрок';
+  const nick = (stats.nick || '').trim() || fallbackNick;
+  const displayName = nick;
   const modeLabel = stats.modeLabel || DIFF_LABELS[stats.mode] || stats.mode || 'Норм';
   const seconds = Number.isFinite(stats.seconds) ? stats.seconds : Math.max(0, elapsedMs/1000);
   const timeText = formatTime(seconds);
   const link = shareBaseLink();
   const gameTitle = 'Hi, Halloween: Pumpkin Catcher!';
+  const imageUrl = getShareImageUrl();
   const shareLines = [
     gameTitle,
     `Никнейм: ${displayName}`,
     `Уровень сложности: ${modeLabel}`,
     `Результат по времени: ${timeText}`,
-    'Готовься к Хэллоуину вместе с нами! Узнай, а на что способен ты?'
+    'Готовься к Хэллоуину вместе с нами! Узнай, а на что способен ты?',
+    `Картинка: ${imageUrl}`
   ];
   const text = shareLines.join('\n');
-  return { text, link, nick, modeLabel, timeText, gameTitle };
+  return { text, link, nick: displayName, modeLabel, timeText, gameTitle, imageUrl };
 }
 
 function showShareOverlay(payload){
@@ -1183,6 +1222,14 @@ function showShareOverlay(payload){
   if(shareLinkEl){
     shareLinkEl.textContent = data.link;
     shareLinkEl.href = data.link;
+  }
+  if(sharePreviewImage){
+    const url = data.imageUrl || getShareImageUrl();
+    if(url){
+      sharePreviewImage.src = url;
+      sharePreviewImage.alt = data.gameTitle || 'Hi, Halloween: Pumpkin Catcher!';
+      sharePreviewImage.classList.remove('hidden');
+    }
   }
   if(shareOverlay){
     shareOverlay.classList.remove('hidden');
@@ -1202,10 +1249,15 @@ async function shareResult(){
   const payload = showShareOverlay(buildSharePayload());
   highlightShare(null);
   const combined = `${payload.text}\n${payload.link}`;
+  const shareFiles = await buildShareFiles();
   let shared = false;
   try{
     if(navigator.share){
-      await navigator.share({ title: payload.gameTitle || 'Hi Halloween — Pumpkin Catcher', text: payload.text, url: payload.link });
+      const shareData = { title: payload.gameTitle || 'Hi Halloween — Pumpkin Catcher', text: payload.text, url: payload.link };
+      if(shareFiles.length && navigator.canShare && navigator.canShare({ files: shareFiles })){
+        shareData.files = shareFiles;
+      }
+      await navigator.share(shareData);
       if(btn) btn.textContent = 'Поделились!';
       shared = true;
     } else if(navigator.clipboard){
@@ -1270,7 +1322,7 @@ function closeShareOverlay(){
 }
 
 function shareUrlFor(target, payload){
-  const { text, link } = payload;
+  const { text, link, imageUrl } = payload;
   if (target === 'telegram'){
     return `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`;
   }
@@ -1279,7 +1331,11 @@ function shareUrlFor(target, payload){
   }
   if (target === 'vk'){
     const title = 'Hi Halloween — Pumpkin Catcher';
-    return `https://vk.com/share.php?url=${encodeURIComponent(link)}&title=${encodeURIComponent(title)}&comment=${encodeURIComponent(text)}`;
+    let url = `https://vk.com/share.php?url=${encodeURIComponent(link)}&title=${encodeURIComponent(title)}&comment=${encodeURIComponent(text)}`;
+    if(imageUrl){
+      url += `&image=${encodeURIComponent(imageUrl)}`;
+    }
+    return url;
   }
   return null;
 }
@@ -1290,16 +1346,50 @@ function openShareTarget(target){
 
 document.getElementById('btnShare')?.addEventListener('click', ()=>{ shareResult(); });
 
-function loadNick(){ try{ return localStorage.getItem('pumpkin_nick') || ''; }catch(e){ return ''; } }
-function saveNick(v){ try{ localStorage.setItem('pumpkin_nick', (v||'').trim()); }catch(e){} }
-function ensureNick(){
-  const n = loadNick();
-  if(!n){
-    document.getElementById('nickOverlay')?.classList.remove('hidden');
-    document.body.classList.add('modal-open');
-    const inp = document.getElementById('nickInput');
-    try{ inp && inp.focus(); }catch(e){}
+let cachedNick = '';
+function loadNick(){
+  try{
+    const raw = localStorage.getItem('pumpkin_nick') || '';
+    const trimmed = (raw || '').trim();
+    if(trimmed) cachedNick = trimmed;
+    return raw;
+  }catch(e){
+    return cachedNick || '';
   }
+}
+function saveNick(v){
+  const trimmed = (v||'').trim();
+  cachedNick = trimmed;
+  try{ localStorage.setItem('pumpkin_nick', trimmed); }catch(e){}
+}
+function resolveNick(){
+  if(cachedNick) return cachedNick;
+  const saved = (loadNick() || '').trim();
+  if(saved){
+    cachedNick = saved;
+    return saved;
+  }
+  const inputVal = (document.getElementById('nickInput')?.value || '').trim();
+  if(inputVal){
+    cachedNick = inputVal;
+    return inputVal;
+  }
+  return 'Игрок';
+}
+function ensureNick(){
+  const saved = (loadNick() || '').trim();
+  const inp = document.getElementById('nickInput');
+  if(saved){
+    cachedNick = saved;
+    if(inp) inp.value = saved;
+    return;
+  }
+  if(inp && cachedNick){
+    inp.value = cachedNick;
+  }
+  document.getElementById('nickOverlay')?.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+  try{ inp && inp.focus(); }catch(e){}
 }
 try{
   document.getElementById('btnSaveNick')?.addEventListener('click', ()=>{
@@ -1342,7 +1432,9 @@ function saveLeaderboard(lb){
 // record format: { nick, diff, seconds, ts }
 function pushLeaderboard(nick, diff, seconds){
   const lb = loadLeaderboard();
-  lb.push({ nick: nick||'Игрок', diff, seconds, ts: Date.now() });
+  const cleanNick = (nick || '').trim();
+  const finalNick = cleanNick || resolveNick();
+  lb.push({ nick: finalNick, diff, seconds, ts: Date.now() });
   lb.sort((a,b)=> a.seconds - b.seconds);
   saveLeaderboard(lb);
   return lb;
