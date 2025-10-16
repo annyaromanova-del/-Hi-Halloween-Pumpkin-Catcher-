@@ -171,7 +171,19 @@ const BG_NIGHT = withVer('assets/night/bg_video.jpg');
 function applyVisualTheme(){
   try{
     const bg = NIGHT_MODE ? BG_NIGHT : BG_DAY;
-    document.documentElement?.style.setProperty('--stage-bg-url', `url("${bg}")`);
+    const root = document.documentElement;
+    root?.style.setProperty('--stage-bg-url', `url("${bg}")`);
+    if (root){
+      root.classList.toggle('night-mode', NIGHT_MODE);
+      root.classList.toggle('day-mode', !NIGHT_MODE);
+      const bgVar = NIGHT_MODE ? '--page-bg-night' : '--page-bg-day';
+      let bgColor = NIGHT_MODE ? '#0b1330' : '#4d7ac2';
+      try{
+        const resolved = getComputedStyle(root).getPropertyValue(bgVar).trim();
+        if (resolved) bgColor = resolved;
+      }catch(_){}
+      root.style.setProperty('--page-bg-color', bgColor);
+    }
     if (document.body){
       document.body.classList.toggle('night-mode', NIGHT_MODE);
       document.body.classList.toggle('day-mode', !NIGHT_MODE);
