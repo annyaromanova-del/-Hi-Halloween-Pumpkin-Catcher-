@@ -42,12 +42,13 @@ const FOG_DURATION = CANDY_BOOST_DURATION;
 
 let NIGHT_MODE=false; try{ const h=new Date().getHours(); NIGHT_MODE=(h>=18||h<6);}catch(e){NIGHT_MODE=false;}
 
+const SIZE_REDUCTION = 0.8;
 const BASE_SIZE = {
-  pumpkin: 44 * 1.07 * 1.2,
+  pumpkin: 44 * 1.07 * 1.2 * SIZE_REDUCTION,
   spider: 44,
   candy: 44,
   web: 44 * 1.07,
-  ghost: 66 * 1.07 * 1.2,
+  ghost: 66 * 1.07 * 1.2 * SIZE_REDUCTION,
   heart: 46
 };
 const FEATURE_SCALE = 1.5;
