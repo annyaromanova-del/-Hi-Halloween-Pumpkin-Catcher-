@@ -250,8 +250,8 @@ function weightsToBag(weights){
 const DIFF = {
   easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.476, weights: { pumpkin:4,    spider:0.784, candy:1,   ghost:2,   web:0.512 } },
   normal: { spawnBase: 720, spawnMin: 360, fallMul: 0.855, weights: { pumpkin:4,    spider:1.62,  candy:1,   ghost:2,   web:0.81 } },
-  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.518, weights: { pumpkin:2.88, spider:3.168, ghost:2,   web:1.584 } },
-  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.6445, weights: { pumpkin:1.904, spider:3.432, ghost:2, web:1.872, bat:1.12 }, allowHearts: false }
+  hard:   { spawnBase: 400, spawnMin: 200, fallMul: 2.277, weights: { pumpkin:2.88, spider:3.168, ghost:2,   web:1.584 } },
+  expert: { spawnBase: 260, spawnMin: 130, fallMul: 3.289, weights: { pumpkin:1.904, spider:3.432, ghost:2, web:1.872, bat:1.12 }, allowHearts: false }
 };
 for (const profile of Object.values(DIFF)){
   if(profile.weights){
