@@ -22,7 +22,7 @@
 
 ## 📸 Скриншоты  
 
-(./skrin_baza) (./skrin_ais) (./skrin_mobail)
+(./skrin_baza.jpg) (./skrin_ais.jpg) (./skrin_mobail.jpg)
 ---
 
 ## ⚡ Технологии  
