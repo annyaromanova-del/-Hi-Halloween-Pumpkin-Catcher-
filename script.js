@@ -29,6 +29,7 @@ const btnPlay = document.getElementById('btnPlay');
 const diffSelect = document.getElementById('difficulty');
 const slowBadge = document.getElementById('slowBadge');
 const fastBadge = document.getElementById('fastBadge');
+const quakeBadge = document.getElementById('quakeBadge');
 const pausedBadge = document.getElementById('pausedBadge');
 const winActions = document.getElementById('winActions');
 const lossActions = document.getElementById('lossActions');
@@ -117,11 +118,20 @@ const SLOW_MODE_NAME = 'Тыквопад';
 const SLOW_MODE_EMOJI = '🍬';
 const SLOW_MODE_LABEL = `${SLOW_MODE_EMOJI} ${SLOW_MODE_NAME}`;
 const SLOW_MODE_HINT = `Режим «${SLOW_MODE_NAME}» активен`;
+const QUAKE_MODE_NAME = 'Дрожь';
+const QUAKE_MODE_EMOJI = '💥';
+const QUAKE_MODE_LABEL = `${QUAKE_MODE_EMOJI} ${QUAKE_MODE_NAME}`;
+const QUAKE_MODE_HINT = `Режим «${QUAKE_MODE_NAME}» активен`;
 
 if (slowBadge){
   slowBadge.textContent = SLOW_MODE_LABEL;
   slowBadge.setAttribute('aria-label', SLOW_MODE_HINT);
   slowBadge.setAttribute('title', SLOW_MODE_HINT);
+}
+if (quakeBadge){
+  quakeBadge.textContent = QUAKE_MODE_LABEL;
+  quakeBadge.setAttribute('aria-label', QUAKE_MODE_HINT);
+  quakeBadge.setAttribute('title', QUAKE_MODE_HINT);
 }
 
 function needsSizeBoost(){
@@ -732,6 +742,7 @@ function triggerBasketStun(now, duration = BAT_FREEZE_DURATION){
     stageEl.classList.add('stage--quake');
     scheduleQuakeRemoval();
   }
+  quakeBadge?.classList.remove('hidden');
 }
 
 function clearBasketStun(){
@@ -743,6 +754,7 @@ function clearBasketStun(){
     clearTimeout(quakeTimer);
     quakeTimer = null;
   }
+  quakeBadge?.classList.add('hidden');
 }
 
 function collides(o){
@@ -844,8 +856,9 @@ function update(dt,now){
   const cappedLives = Math.min(lives, MAX_LIVES);
   const emptySlots = Math.max(0, BASE_LIVES - cappedLives);
   livesEl.textContent='❤️'.repeat(cappedLives)+'🤍'.repeat(emptySlots);
-  slowBadge.classList.toggle('hidden', !(now<candyBoostUntil));
-  fastBadge.classList.toggle('hidden', !(now<webBoostUntil));
+  if(slowBadge) slowBadge.classList.toggle('hidden', !(now<candyBoostUntil));
+  if(fastBadge) fastBadge.classList.toggle('hidden', !(now<webBoostUntil));
+  if(quakeBadge) quakeBadge.classList.toggle('hidden', !(now<basketFrozenUntil));
   objects=objects.filter(o=>{
     const mult = speedMultiplier(o.type, now);
     o.y+=o.vy*mult*dt*0.06;
