@@ -22,7 +22,16 @@
 
 ## 📸 Скриншоты  
 
-(./skrin_baza.jpg) (./skrin_ais.jpg) (./skrin_mobail.jpg)
+<p align="center">
+  <img src="./skrin_baza.jpg" alt="Скриншот: базовая версия игры" width="45%" />
+  <img src="./skrin_ais.jpg" alt="Скриншот: режим «Айс»" width="45%" />
+</p>
+
+<p align="center">
+  <img src="./skrin_mobail.jpg" alt="Скриншот: мобильная версия" width="40%" />
+  <img src="./skrin_head.jpg" alt="Скриншот: экран с Джеком" width="40%" />
+</p>
+
 ---
 
 ## ⚡ Технологии  
