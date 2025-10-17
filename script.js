@@ -14,6 +14,7 @@
 })();
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+const stageEl = document.getElementById('stageWrap');
 
 const scoreEl = document.getElementById('score');
 const timerEl = document.getElementById('timer');
@@ -39,6 +40,7 @@ const TARGET_PUMPKINS = 100;
 const BASE_LIVES = 3;
 const CANDY_BOOST_DURATION = 6000;
 const FOG_DURATION = CANDY_BOOST_DURATION;
+const BAT_FREEZE_DURATION = 3000;
 
 let NIGHT_MODE=false; try{ const h=new Date().getHours(); NIGHT_MODE=(h>=18||h<6);}catch(e){NIGHT_MODE=false;}
 
@@ -49,21 +51,26 @@ const BASE_SIZE = {
   candy: 44,
   web: 44 * 1.07,
   ghost: 66 * 1.07 * 1.2 * SIZE_REDUCTION * 0.85,
-  heart: 46
+  heart: 46,
+  bat: 52
 };
 const FEATURE_SCALE = 1.5;
 BASE_SIZE.pumpkin *= FEATURE_SCALE;
 BASE_SIZE.ghost   *= FEATURE_SCALE;
 BASE_SIZE.web     *= FEATURE_SCALE;
+BASE_SIZE.bat     *= FEATURE_SCALE;
 if (!NIGHT_MODE) {
   const DAY_SCALE = 1.5;
   BASE_SIZE.pumpkin *= DAY_SCALE;
   BASE_SIZE.ghost   *= DAY_SCALE;
   BASE_SIZE.web     *= DAY_SCALE;
+  BASE_SIZE.bat     *= DAY_SCALE;
 }
 const player = { w: 200, h: 38, x: 0, y: 0, vx: 0 };
 let basketTargetX = 0;
 let basketSlowedUntil = 0;
+let basketFrozenUntil = 0;
+let quakeTimer = null;
 
 let pumpkins = 0, lives = BASE_LIVES;
 const MAX_EXTRA_LIVES = 1;
@@ -211,6 +218,12 @@ function applyVisualTheme(){
 }
 applyVisualTheme();
 function rand(a,b){return Math.random()*(b-a)+a}
+function clockNow(){
+  try{
+    if(typeof performance !== 'undefined' && typeof performance.now === 'function') return performance.now();
+  }catch(e){}
+  return Date.now();
+}
 function rounded(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 function escapeHtml(str){
   const s = (str==null) ? '' : String(str);
@@ -219,8 +232,8 @@ function escapeHtml(str){
   }[ch]||ch));
 }
 
-const baseFall = { pumpkin:2.2, spider:2.6, candy:2.0, ghost:2.0, web:2.2, heart:2.4 };
-const TYPE_SYMBOL = { pumpkin:'P', spider:'S', candy:'C', ghost:'G', web:'W', heart:'H' };
+const baseFall = { pumpkin:2.2, spider:2.6, candy:2.0, ghost:2.0, web:2.2, heart:2.4, bat:2.35 };
+const TYPE_SYMBOL = { pumpkin:'P', spider:'S', candy:'C', ghost:'G', web:'W', heart:'H', bat:'B' };
 const BAG_SCALE = 10;
 function weightsToBag(weights){
   const bag = [];
@@ -238,7 +251,7 @@ const DIFF = {
   easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.476, weights: { pumpkin:4,    spider:0.784, candy:1,   ghost:2,   web:0.512 } },
   normal: { spawnBase: 720, spawnMin: 360, fallMul: 0.855, weights: { pumpkin:4,    spider:1.62,  candy:1,   ghost:2,   web:0.81 } },
   hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.518, weights: { pumpkin:2.88, spider:3.168, ghost:2,   web:1.584 } },
-  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.6445, weights: { pumpkin:1.904, spider:3.432, ghost:2,   web:1.872 }, allowHearts: false }
+  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.6445, weights: { pumpkin:1.904, spider:3.432, ghost:2, web:1.872, bat:1.12 }, allowHearts: false }
 };
 for (const profile of Object.values(DIFF)){
   if(profile.weights){
@@ -258,6 +271,7 @@ function bagToTypes(bag){
     c==='C' ? 'candy' :
     c==='G' ? 'ghost' :
     c==='H' ? 'heart' :
+    c==='B' ? 'bat' :
     'web'
   );
 }
@@ -266,9 +280,35 @@ function drawPumpkinVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s)
 function drawSpiderVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#1a1a1a'; ctx.beginPath(); ctx.arc(13,13,12,0,Math.PI*2); ctx.fill(); ctx.restore(); }
 function drawCandyVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#f64dcc'; ctx.beginPath(); ctx.arc(13,13,12,0,Math.PI*2); ctx.fill(); ctx.restore(); }
 function drawGhostVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.fillStyle='#e7f0ff'; ctx.beginPath(); ctx.arc(13,13,12,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+function drawBatVec(x,y,s=1){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(s,s);
+  ctx.fillStyle = '#1f2238';
+  ctx.beginPath();
+  ctx.moveTo(13,6);
+  ctx.bezierCurveTo(9,4.5,5.5,8.5,3.5,11.5);
+  ctx.bezierCurveTo(1.5,14.5,1,16.5,2.5,18);
+  ctx.lineTo(7.5,15.8);
+  ctx.lineTo(10.5,19);
+  ctx.lineTo(13,15.5);
+  ctx.lineTo(15.5,19);
+  ctx.lineTo(18.5,15.8);
+  ctx.lineTo(23.5,18);
+  ctx.bezierCurveTo(25,16.5,24.5,14.5,22.5,11.5);
+  ctx.bezierCurveTo(20.5,8.5,17,4.5,13,6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = '#f5f7ff';
+  ctx.beginPath();
+  ctx.arc(11,11.2,1.6,0,Math.PI*2);
+  ctx.arc(15,11.2,1.6,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
 function drawWebVec(x,y,s=1){ ctx.save(); ctx.translate(x,y); ctx.scale(s,s); ctx.strokeStyle='#c7d8ff'; ctx.beginPath(); ctx.arc(13,13,12,0,Math.PI*2); ctx.stroke(); ctx.restore(); }
 
-const SPRITES = { pumpkin:null, spider:null, candy:null, ghost:null, web:null, basket:null, heart:null, basketLogo:null };
+const SPRITES = { pumpkin:null, spider:null, candy:null, ghost:null, web:null, basket:null, heart:null, bat:null, basketLogo:null };
 function loadSprite(name, cb){
   const folder = NIGHT_MODE ? 'assets/night' : 'assets/day';
   const img = new Image();
@@ -276,7 +316,7 @@ function loadSprite(name, cb){
   img.onerror = () => cb(null);
   img.src = `${folder}/${name}.webp`;
 }
-['pumpkin','spider','candy','ghost','web','basket'].forEach(n => loadSprite(n, img => SPRITES[n] = img));
+['pumpkin','spider','candy','ghost','web','basket','bat'].forEach(n => loadSprite(n, img => SPRITES[n] = img));
 
 function loadImage(src, cb){
   const img = new Image();
@@ -286,8 +326,8 @@ function loadImage(src, cb){
 }
 loadImage('лого-1.png', img => SPRITES.basketLogo = img);
 
-let drawPumpkin = drawPumpkinVec, drawSpider = drawSpiderVec, drawCandy = drawCandyVec, drawGhost = drawGhostVec, drawWeb = drawWebVec, drawHeart = drawCandyVec;
-const _dP = drawPumpkin, _dS = drawSpider, _dC = drawCandy, _dG = drawGhost, _dW = drawWeb, _dH = drawCandyVec;
+let drawPumpkin = drawPumpkinVec, drawSpider = drawSpiderVec, drawCandy = drawCandyVec, drawGhost = drawGhostVec, drawWeb = drawWebVec, drawHeart = drawCandyVec, drawBat = drawBatVec;
+const _dP = drawPumpkin, _dS = drawSpider, _dC = drawCandy, _dG = drawGhost, _dW = drawWeb, _dH = drawCandyVec, _dB = drawBatVec;
 
 drawPumpkin = (x,y,s=1)=>{
   if (SPRITES.pumpkin){
@@ -323,6 +363,18 @@ drawHeart  = (x,y,s=1)=>{
   ctx.fill();
   ctx.restore();
 };
+drawBat = (x,y,s=1)=>{
+  if(SPRITES.bat){
+    const size = 28*s;
+    const { sin } = beatPhase();
+    const sway = Math.sin(clockNow() * 0.005) * 4;
+    ctx.save();
+    ctx.translate(x+size/2, y+size/2);
+    ctx.rotate(sin * 0.25);
+    ctx.drawImage(SPRITES.bat, -size/2 + sway*0.1, -size/2 + sin*2, size, size);
+    ctx.restore();
+  } else _dB(x,y,s);
+};
 
 let dragging=false, dragPointerId=null, dragOffsetX=0;
 function pointerPos(e){
@@ -336,9 +388,14 @@ function pointerPos(e){
   };
 }
 function followPointer(x){
+  const now = clockNow();
+  if(now < basketFrozenUntil){
+    basketTargetX = player.x;
+    return;
+  }
   const target = Math.max(0, Math.min(W - player.w, x - dragOffsetX));
   basketTargetX = target;
-  if (performance.now() >= basketSlowedUntil){
+  if (now >= basketSlowedUntil){
     const clamped = Math.max(0, Math.min(W - player.w, target));
     if (Math.abs(player.x - clamped) > 0.01){
       player.x = clamped;
@@ -562,6 +619,43 @@ function spawnHeart(now, profile){
   return true;
 }
 
+function spawnBatCluster(now, profile){
+  const type = 'bat';
+  const size = boostedSize(BASE_SIZE[type] || 44, 28);
+  const fallMul = profile?.fallMul || 1;
+  const baseVy = (baseFall[type] + (Math.random()*0.6 - 0.3)) * fallMul;
+  const count = Math.random() < 0.5 ? 3 : 6;
+  const spread = Math.max(size * 0.85, 42);
+  const pattern = count === 3
+    ? [
+        { dx: 0, dy: 0 },
+        { dx: -spread, dy: -size * 0.7 },
+        { dx: spread, dy: -size * 0.7 }
+      ]
+    : [
+        { dx: 0, dy: 0 },
+        { dx: -spread * 0.9, dy: -size * 0.55 },
+        { dx: spread * 0.9, dy: -size * 0.55 },
+        { dx: -spread * 1.8, dy: -size * 1.05 },
+        { dx: spread * 1.8, dy: -size * 1.05 },
+        { dx: 0, dy: -size * 1.55 }
+      ];
+  const half = size / 2;
+  const dxValues = pattern.map(p => p.dx);
+  const minDx = Math.min(...dxValues);
+  const maxDx = Math.max(...dxValues);
+  const minCenter = Math.max(half, half - minDx);
+  const maxCenter = Math.min(W - half, W - half - maxDx);
+  const fallbackCenter = Math.max(half, Math.min(W - half, W / 2));
+  const center = (minCenter <= maxCenter) ? rand(minCenter, maxCenter) : fallbackCenter;
+  for(const point of pattern){
+    const x = center + point.dx + rand(-size * 0.08, size * 0.08);
+    const y = -size + point.dy + rand(-size * 0.05, size * 0.05);
+    const vy = baseVy * (0.92 + Math.random() * 0.16);
+    objects.push({ type, x, y, vy, size });
+  }
+}
+
 function spawn(now){
   if(now-lastSpawn<spawnInterval) return;
   lastSpawn=now;
@@ -570,11 +664,15 @@ function spawn(now){
   if(!inStorm && spawnHeart(now, profile)) return;
   const bag = inStorm ? WEB_STORM_BAG : (profile.bagTypes || (profile.bagTypes = bagToTypes(profile.bag)));
   const type = bag[(Math.random()*bag.length)|0] || 'spider';
-  const size = boostedSize(BASE_SIZE[type] || 44, 28);
-  let vy=(baseFall[type]+(Math.random()*1.0-0.4))*profile.fallMul;
-  if(inStorm) vy *= 1.28;
-  const half=size/2, x=rand(half,W-half), y=-size;
-  objects.push({type,x,y,vy,size});
+  if(type === 'bat'){
+    spawnBatCluster(now, profile);
+  } else {
+    const size = boostedSize(BASE_SIZE[type] || 44, 28);
+    let vy=(baseFall[type]+(Math.random()*1.0-0.4))*profile.fallMul;
+    if(inStorm) vy *= 1.28;
+    const half=size/2, x=rand(half,W-half), y=-size;
+    objects.push({type,x,y,vy,size});
+  }
   const baseInterval = Math.max(profile.spawnMin, profile.spawnBase - pumpkins*2.4);
   if(inStorm){
     const faster = Math.max(profile.spawnMin * 0.4, baseInterval * 0.45);
@@ -610,6 +708,43 @@ function spawnGhostEscape(o, now){
   });
 }
 
+function scheduleQuakeRemoval(){
+  if(!stageEl) return;
+  if(quakeTimer) clearTimeout(quakeTimer);
+  const now = clockNow();
+  const delay = Math.max(30, Math.round(Math.max(0, basketFrozenUntil - now)));
+  quakeTimer = setTimeout(()=>{
+    const current = clockNow();
+    if(current >= basketFrozenUntil - 8){
+      stageEl.classList.remove('stage--quake');
+      quakeTimer = null;
+    } else {
+      scheduleQuakeRemoval();
+    }
+  }, delay);
+}
+
+function triggerBasketStun(now, duration = BAT_FREEZE_DURATION){
+  const until = now + duration;
+  basketFrozenUntil = Math.max(basketFrozenUntil, until);
+  basketTargetX = player.x;
+  if(stageEl){
+    stageEl.classList.add('stage--quake');
+    scheduleQuakeRemoval();
+  }
+}
+
+function clearBasketStun(){
+  basketFrozenUntil = 0;
+  if(stageEl){
+    stageEl.classList.remove('stage--quake');
+  }
+  if(quakeTimer){
+    clearTimeout(quakeTimer);
+    quakeTimer = null;
+  }
+}
+
 function collides(o){
   const bx=player.x, by=player.y, bw=player.w, bh=player.h;
   const r=(o.size||44)*0.5;
@@ -638,6 +773,10 @@ function applyCatch(o,now){
     if(candyBoostUntil > now) candyBoostUntil = now;
     SFX.bad();
   }
+  else if(o.type==='bat'){
+    triggerBasketStun(now, BAT_FREEZE_DURATION);
+    SFX.bad();
+  }
   else if(o.type==='heart'){
     if(!heartCollected){
       heartCollected = true;
@@ -661,6 +800,13 @@ function speedMultiplier(type, now){
   return mult;
 }
 function updatePlayerMotion(dt, now){
+  if(now < basketFrozenUntil){
+    basketTargetX = player.x;
+    return;
+  }
+  if(stageEl && basketFrozenUntil <= now){
+    stageEl.classList.remove('stage--quake');
+  }
   const target = Math.max(0, Math.min(W - player.w, basketTargetX));
   basketTargetX = target;
   if(now >= basketSlowedUntil){
@@ -729,6 +875,7 @@ function drawObjects(){
     else if(o.type==='candy')drawCandy(0,0,sc);
     else if(o.type==='ghost')drawGhost(0,0,sc);
     else if(o.type==='web')drawWeb(0,0,sc);
+    else if(o.type==='bat')drawBat(0,0,sc);
     ctx.restore();
   }
 }
@@ -989,6 +1136,7 @@ function openMainMenu(){
   pausedBadge?.classList.add('hidden');
   slowBadge?.classList.add('hidden');
   fastBadge?.classList.add('hidden');
+  clearBasketStun();
   if(messageOverlay){
     messageOverlay.classList.add('hidden');
     messageOverlay.classList.remove('victory');
@@ -1007,6 +1155,7 @@ function startGame(difficulty){
   syncCurrentDiff(diff);
   pumpkins=0; lives=BASE_LIVES; objects.length=0; lastSpawn=0;
   effects.length=0;
+  clearBasketStun();
   candyBoostUntil=0; webBoostUntil=0; webStormUntil=0;
   fogUntil=0; fogStartAt=0; fogLevel=0; basketSlowedUntil=0;
   heartSpawned=false; heartCollected=false;

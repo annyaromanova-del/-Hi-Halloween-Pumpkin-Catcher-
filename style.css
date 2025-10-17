@@ -34,6 +34,10 @@ html.night-mode{ --page-bg-color:var(--page-bg-night); }
   box-shadow:0 16px 48px rgba(0,0,0,.5);
   overflow:hidden;
   background:transparent;
+  will-change:transform;
+}
+.stage.stage--quake{
+  animation:stage-shake 0.12s ease-in-out infinite;
 }
 .stage::before,
 .stage::after{
@@ -53,6 +57,17 @@ html.night-mode{ --page-bg-color:var(--page-bg-night); }
   filter:brightness(.93);
   transform:translate3d(var(--parallax-x),0,0);
   z-index:1;
+}
+@keyframes stage-shake{
+  0%{transform:translate3d(-2px,-1px,0);}
+  25%{transform:translate3d(3px,2px,0);}
+  50%{transform:translate3d(-3px,3px,0);}
+  75%{transform:translate3d(2px,-2px,0);}
+  100%{transform:translate3d(0,0,0);}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .stage.stage--quake{animation:none;}
 }
 .stage-branding{
   flex-basis:100%;
