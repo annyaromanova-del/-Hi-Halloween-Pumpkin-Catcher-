@@ -1424,12 +1424,13 @@ function buildSharePayload(){
   const gameTitle = 'Hi, Halloween: Pumpkin Catcher!';
   const imageUrl = getShareImageUrl();
   const shareLines = [
+    'Играй по ссылке: https://annyaromanova-del.github.io/-Hi-Halloween-Pumpkin-Catcher-/',
     gameTitle,
     `Никнейм: ${displayName}`,
     `Уровень сложности: ${modeLabel}`,
     `Результат по времени: ${timeText}`,
     'Готовься к Хэллоуину вместе с нами! Узнай, а на что способен ты?',
-    `Картинка: ${imageUrl}`
+    imageUrl
   ];
   const text = shareLines.join('\n');
   return { text, link, nick: displayName, modeLabel, timeText, gameTitle, imageUrl };
