@@ -235,10 +235,10 @@ function weightsToBag(weights){
   return bag;
 }
 const DIFF = {
-  easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.85, weights: { pumpkin:4,   spider:1.6, candy:1, ghost:2,   web:0.8 } },
-  normal: { spawnBase: 720, spawnMin: 360, fallMul: 1.0,  weights: { pumpkin:4,   spider:2.0, candy:1, ghost:2,   web:1.0 } },
-  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.15, weights: { pumpkin:4,   spider:2.4, candy:1, ghost:2,   web:1.2 } },
-  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.15, weights: { pumpkin:3.4, spider:2.4, candy:1, ghost:2,   web:1.2 } }
+  easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.595, weights: { pumpkin:4,    spider:1.12, candy:1,   ghost:2,   web:0.64 } },
+  normal: { spawnBase: 720, spawnMin: 360, fallMul: 0.9,   weights: { pumpkin:4,    spider:1.8,  candy:1,   ghost:2,   web:0.9 } },
+  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.38,  weights: { pumpkin:3.6,  spider:2.88, candy:1,   ghost:2,   web:1.44 } },
+  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.495, weights: { pumpkin:2.38, spider:3.12, ghost:2,   web:1.56 }, allowHearts: false }
 };
 for (const profile of Object.values(DIFF)){
   if(profile.weights){
@@ -543,6 +543,7 @@ const SFX = (()=>{
 })();
 
 function spawnHeart(now, profile){
+  if(profile && profile.allowHearts === false) return false;
   if(heartSpawned || heartCollected) return false;
   if(now < webStormUntil) return false;
   if(now - startTime < HEART_SPAWN_DELAY) return false;
