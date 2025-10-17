@@ -196,7 +196,7 @@ function applyVisualTheme(){
       root.classList.toggle('night-mode', NIGHT_MODE);
       root.classList.toggle('day-mode', !NIGHT_MODE);
       const bgVar = NIGHT_MODE ? '--page-bg-night' : '--page-bg-day';
-      let bgColor = NIGHT_MODE ? '#0b1330' : '#4d7ac2';
+      let bgColor = NIGHT_MODE ? '#0d0c0f' : '#4d7ac2';
       try{
         const resolved = getComputedStyle(root).getPropertyValue(bgVar).trim();
         if (resolved) bgColor = resolved;
