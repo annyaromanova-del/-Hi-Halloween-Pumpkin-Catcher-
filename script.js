@@ -235,10 +235,10 @@ function weightsToBag(weights){
   return bag;
 }
 const DIFF = {
-  easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.595, weights: { pumpkin:4,    spider:1.12, candy:1,   ghost:2,   web:0.64 } },
-  normal: { spawnBase: 720, spawnMin: 360, fallMul: 0.9,   weights: { pumpkin:4,    spider:1.8,  candy:1,   ghost:2,   web:0.9 } },
-  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.38,  weights: { pumpkin:3.6,  spider:2.88, candy:1,   ghost:2,   web:1.44 } },
-  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.495, weights: { pumpkin:2.38, spider:3.12, ghost:2,   web:1.56 }, allowHearts: false }
+  easy:   { spawnBase: 820, spawnMin: 420, fallMul: 0.476, weights: { pumpkin:4,    spider:0.784, candy:1,   ghost:2,   web:0.512 } },
+  normal: { spawnBase: 720, spawnMin: 360, fallMul: 0.855, weights: { pumpkin:4,    spider:1.62,  candy:1,   ghost:2,   web:0.81 } },
+  hard:   { spawnBase: 600, spawnMin: 300, fallMul: 1.518, weights: { pumpkin:2.88, spider:3.168, ghost:2,   web:1.584 } },
+  expert: { spawnBase: 520, spawnMin: 260, fallMul: 1.6445, weights: { pumpkin:1.904, spider:3.432, ghost:2,   web:1.872 }, allowHearts: false }
 };
 for (const profile of Object.values(DIFF)){
   if(profile.weights){
