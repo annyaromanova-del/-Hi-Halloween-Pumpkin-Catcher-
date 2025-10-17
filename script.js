@@ -21,6 +21,8 @@ const timerEl = document.getElementById('timer');
 const livesEl = document.getElementById('lives');
 const startOverlay = document.getElementById('startOverlay');
 const messageOverlay = document.getElementById('messageOverlay');
+const introOverlay = document.getElementById('introVideoOverlay');
+const introVideo = document.getElementById('introVideo');
 const msgTitle = document.getElementById('msgTitle');
 const msgText = document.getElementById('msgText');
 const btnMenu = document.getElementById('btnMenu');
@@ -1739,9 +1741,21 @@ document.querySelectorAll('#startOverlay .diff').forEach(btn=>{
   const startOverlay = document.getElementById('startOverlay');
   if (!startOverlay) return;
 
-  function openStart(){
+  const introOverlayEl = introOverlay;
+  const introVideoEl = introVideo;
+  let introActive = !!(introOverlayEl && !introOverlayEl.classList.contains('hidden'));
+  let startPending = false;
+
+  function showStart(){
     startOverlay.classList.remove('hidden');
     document.body.classList.add('modal-open');
+  }
+  function openStart(){
+    if (introActive){
+      startPending = true;
+      return;
+    }
+    showStart();
   }
   function closeStart(){
     startOverlay.classList.add('hidden');
@@ -1751,6 +1765,63 @@ document.querySelectorAll('#startOverlay .diff').forEach(btn=>{
     try{ document.getElementById('preloader')?.remove(); }catch(_){}
     closeStart();
     try{ startGame(diff || 'normal'); }catch(e){ console.error('startGame error:', e); }
+  }
+
+  function finishIntro(){
+    if (!introActive) return;
+    introActive = false;
+    try{ introOverlayEl?.classList.add('hidden'); }catch(e){}
+    if (introVideoEl){
+      try{
+        introVideoEl.pause();
+        introVideoEl.currentTime = 0;
+      }catch(err){}
+    }
+    if (startPending){
+      startPending = false;
+      showStart();
+    }
+  }
+
+  function attemptVideoPlay(){
+    if (!introVideoEl || !introActive) return;
+    try{
+      const playAttempt = introVideoEl.play();
+      if (playAttempt && typeof playAttempt.then === 'function'){
+        playAttempt.catch(()=>{
+          if (!introActive) return;
+          introVideoEl.muted = true;
+          const retry = introVideoEl.play();
+          if (retry && typeof retry.then === 'function'){
+            retry.catch(()=> finishIntro());
+          }
+        });
+      }
+    }catch(err){
+      finishIntro();
+    }
+  }
+
+  if (introOverlayEl){
+    introActive = true;
+    ['click','touchstart','keydown'].forEach(ev=>{
+      introOverlayEl.addEventListener(ev, ()=>{ finishIntro(); }, { passive:true });
+    });
+    if (introVideoEl){
+      ['ended','error','abort','stalled'].forEach(ev=>{
+        introVideoEl.addEventListener(ev, finishIntro);
+      });
+      if (introVideoEl.readyState >= 2){
+        attemptVideoPlay();
+      } else {
+        introVideoEl.addEventListener('canplay', attemptVideoPlay, { once:true });
+        setTimeout(attemptVideoPlay, 200);
+      }
+    } else {
+      introActive = false;
+    }
+  } else {
+    introActive = false;
   }
 
   // explicit handlers

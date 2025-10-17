@@ -173,6 +173,8 @@ html.night-mode{ --page-bg-color:var(--page-bg-night); }
   max-width: min(92vw, 440px);
 }
 .overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(4,8,20,.6);backdrop-filter:blur(6px);z-index:20;padding:24px 14px;overflow-y:auto}
+.video-modal{background:transparent;box-shadow:none;padding:0;max-width:min(90vw,1280px);width:100%}
+.video-modal video{display:block;width:100%;height:auto;max-height:90vh;border-radius:16px;box-shadow:0 40px 80px rgba(0,0,0,.35)}
 .modal{width:min(92vw,560px);background:linear-gradient(180deg,#0f1c4d,#0b1433);border:1px solid var(--edge);border-radius:16px;padding:20px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.45);max-height:calc(100vh - 96px);overflow-y:auto}
 .footer{text-align:center;opacity:.65;margin-bottom:16px;display:flex;flex-direction:column;align-items:center;gap:8px}
 .footer-note{margin:0;font-size:0.95rem}
