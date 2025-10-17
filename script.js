@@ -71,6 +71,7 @@ const player = { w: 200, h: 38, x: 0, y: 0, vx: 0 };
 let basketTargetX = 0;
 let basketSlowedUntil = 0;
 let basketFrozenUntil = 0;
+let quakeModeUntil = 0;
 let quakeTimer = null;
 
 let pumpkins = 0, lives = BASE_LIVES;
@@ -722,10 +723,12 @@ function scheduleQuakeRemoval(){
   if(!stageEl) return;
   if(quakeTimer) clearTimeout(quakeTimer);
   const now = clockNow();
-  const delay = Math.max(30, Math.round(Math.max(0, basketFrozenUntil - now)));
+  const target = Math.max(basketFrozenUntil, quakeModeUntil);
+  const delay = Math.max(30, Math.round(Math.max(0, target - now)));
   quakeTimer = setTimeout(()=>{
     const current = clockNow();
-    if(current >= basketFrozenUntil - 8){
+    const remaining = Math.max(basketFrozenUntil, quakeModeUntil);
+    if(current >= remaining - 8){
       stageEl.classList.remove('stage--quake');
       quakeTimer = null;
     } else {
@@ -737,6 +740,7 @@ function scheduleQuakeRemoval(){
 function triggerBasketStun(now, duration = BAT_FREEZE_DURATION){
   const until = now + duration;
   basketFrozenUntil = Math.max(basketFrozenUntil, until);
+  quakeModeUntil = Math.max(quakeModeUntil, until);
   basketTargetX = player.x;
   if(stageEl){
     stageEl.classList.add('stage--quake');
@@ -747,6 +751,7 @@ function triggerBasketStun(now, duration = BAT_FREEZE_DURATION){
 
 function clearBasketStun(){
   basketFrozenUntil = 0;
+  quakeModeUntil = 0;
   if(stageEl){
     stageEl.classList.remove('stage--quake');
   }
@@ -816,7 +821,7 @@ function updatePlayerMotion(dt, now){
     basketTargetX = player.x;
     return;
   }
-  if(stageEl && basketFrozenUntil <= now){
+  if(stageEl && quakeModeUntil <= now){
     stageEl.classList.remove('stage--quake');
   }
   const target = Math.max(0, Math.min(W - player.w, basketTargetX));
@@ -858,7 +863,7 @@ function update(dt,now){
   livesEl.textContent='❤️'.repeat(cappedLives)+'🤍'.repeat(emptySlots);
   if(slowBadge) slowBadge.classList.toggle('hidden', !(now<candyBoostUntil));
   if(fastBadge) fastBadge.classList.toggle('hidden', !(now<webBoostUntil));
-  if(quakeBadge) quakeBadge.classList.toggle('hidden', !(now<basketFrozenUntil));
+  if(quakeBadge) quakeBadge.classList.toggle('hidden', !(now<quakeModeUntil));
   objects=objects.filter(o=>{
     const mult = speedMultiplier(o.type, now);
     o.y+=o.vy*mult*dt*0.06;
